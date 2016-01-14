@@ -6,7 +6,23 @@ An extension for Google's [AutoValue][auto] that implements "with-er" methods fo
 
 ## Usage
 
-**TODO**
+Include auto-value-with in your project and "with-er" methods to your auto-value objects.
+
+```java
+@AutoValue public abstract class User {
+  abstract String id();
+  abstract String name();
+  abstract String email();
+
+  abstract String withEmail(String email);
+}
+```
+
+The extension will generate an implementation of `withEmail(String)` that returns a new instance of `User` with the given email.
+  
+
+By convention "with-er" methods have to use with as prefix and use the exact property name for both method name and parameter name.
+
 
 
 ## Download
@@ -15,6 +31,17 @@ Add a Gradle dependency:
 
 ```groovy
 apt 'com.gabrielittner.auto.cursor:auto-value-with:0.1-SNAPSHOT'
+```
+(Using the [android-apt][apt] plugin)
+
+or Maven:
+```xml
+<dependency>
+  <groupId>com.squareup.auto.value</groupId>
+  <artifactId>auto-value-redacted</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <scope>provided</scope>
+</dependency>
 ```
 
 Snapshots of the development version are available in [Sonatype's `snapshots` repository][snap].
@@ -43,6 +70,4 @@ limitations under the License.
  [auto]: https://github.com/google/auto
  [snap]: https://oss.sonatype.org/content/repositories/snapshots/
  [apt]: https://bitbucket.org/hvisser/android-apt
- [ryan]: https://github.com/rharter/
- [auto-gson]: https://github.com/rharter/auto-value-gson
 
