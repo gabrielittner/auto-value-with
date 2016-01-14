@@ -1,0 +1,3 @@
+rootProject.name = 'auto-value-with-root'
+
+include ':auto-value-with'
