@@ -20,6 +20,7 @@ import com.google.testing.compile.JavaFileObjects;
 import org.junit.Test;
 
 import javax.tools.JavaFileObject;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static com.google.common.truth.Truth.assertAbout;
@@ -93,6 +94,44 @@ public final class AutoValueWithExtensionTest {
         .compilesWithoutError()
         .and()
         .generatesSources(expectedSource);
+  }
+
+  @Test public void returnsSuperType() {
+    JavaFileObject source1 = JavaFileObjects.forSourceString("test.AbstractTest", ""
+                    + "package test;\n"
+                    + "import com.google.auto.value.AutoValue;\n"
+                    + "public abstract class AbstractTest {\n"
+                    + "public abstract String a();\n"
+                    + "abstract AbstractTest withA(String a);"
+                    + "}\n"
+    );
+    JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test extends AbstractTest {\n"
+            + "}\n"
+    );
+
+    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+            + "package test;\n"
+            + "import java.lang.Override;\n"
+            + "import java.lang.String;\n"
+            + "final class AutoValue_Test extends $AutoValue_Test {\n"
+            + "  AutoValue_Test(String a) {\n"
+            + "    super(a);\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withA(String a) {\n"
+            + "    return new AutoValue_Test(a);\n"
+            + "  }\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Arrays.asList(source1, source2))
+            .processedWith(new AutoValueProcessor())
+            .compilesWithoutError()
+            .and()
+            .generatesSources(expectedSource);
   }
 
   @Test public void tooManyParameters() {

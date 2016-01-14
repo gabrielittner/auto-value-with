@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.squareup.javapoet.*;
 
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import java.util.*;
@@ -18,9 +19,10 @@ import static javax.lang.model.element.Modifier.FINAL;
 public class AutoValueWithExtension extends AutoValueExtension {
 
     private static List<WithMethod> getWithMethods(Context context) {
+        ProcessingEnvironment environment = context.processingEnvironment();
         TypeElement autoValueClass = context.autoValueClass();
         ImmutableSet<ExecutableElement> methods = MoreElements.getLocalAndInheritedMethods(autoValueClass,
-                context.processingEnvironment().getElementUtils());
+                environment.getElementUtils());
         Set<String> propertyNames = context.properties().keySet();
         List<WithMethod> withMethods = new ArrayList<WithMethod>(methods.size());
         for (ExecutableElement method : methods) {
@@ -51,8 +53,9 @@ public class AutoValueWithExtension extends AutoValueExtension {
                 throw new IllegalArgumentException(String.format("%s() in %s has \"%s\" as parameter, expected \"%s\"",
                         methodName, autoValueClass, parameterName, methodPropertyName));
             }
+
             TypeMirror returnType = method.getReturnType();
-            if (!returnType.equals(autoValueClass.asType())) {
+            if (!environment.getTypeUtils().isAssignable(autoValueClass.asType(), returnType)) {
                 throw new IllegalArgumentException(String.format("%s() in %s returns %s, expected %s",
                         methodName, autoValueClass, returnType, autoValueClass));
             }
