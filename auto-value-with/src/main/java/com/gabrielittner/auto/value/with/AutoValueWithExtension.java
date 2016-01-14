@@ -7,13 +7,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.squareup.javapoet.*;
 
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import java.util.*;
 
-import static javax.lang.model.element.Modifier.*;
+import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.FINAL;
 
 @AutoService(AutoValueExtension.class)
 public class AutoValueWithExtension extends AutoValueExtension {
@@ -48,22 +47,26 @@ public class AutoValueWithExtension extends AutoValueExtension {
                 throw new IllegalArgumentException("AutoValue class has with method that returns " + returnType
                         + " parameters, expected " + autoValueClass);
             }
-            withMethods.add(new WithMethod(methodName, parameterName, parameter.asType(), returnType));
+            withMethods.add(new WithMethod(methodName, method.getModifiers(), method.getAnnotationMirrors(),
+                    parameterName, parameter.asType()));
         }
         return withMethods;
     }
 
     private static class WithMethod {
         private final String methodName;
+        private final Set<Modifier> methodModifiers;
+        private final List<? extends AnnotationMirror> methodAnnotations;
         private final String propertyName;
         private final TypeMirror propertyType;
-        private final TypeMirror returnType;
 
-        WithMethod(String methodName, String propertyName, TypeMirror propertyType, TypeMirror returnType) {
+        WithMethod(String methodName, Set<Modifier> methodModifiers, List<? extends AnnotationMirror> methodAnnotations,
+                   String propertyName, TypeMirror propertyType) {
             this.methodName = methodName;
+            this.methodModifiers = methodModifiers;
+            this.methodAnnotations = methodAnnotations;
             this.propertyName = propertyName;
             this.propertyType = propertyType;
-            this.returnType = returnType;
         }
     }
 
@@ -121,19 +124,22 @@ public class AutoValueWithExtension extends AutoValueExtension {
     private List<MethodSpec> generateWithMethods(Context context, String className,
                                                  Map<String, ExecutableElement> properties) {
         List<WithMethod> withMethods = getWithMethods(context);
+        String packageName = context.packageName();
         List<MethodSpec> generatedMethods = new ArrayList<MethodSpec>(withMethods.size());
         Set<String> keySet = properties.keySet();
         String[] propertyNames = new String[keySet.size()];
         propertyNames = keySet.toArray(propertyNames);
         for (WithMethod withMethod : withMethods) {
-            generatedMethods.add(generateWithMethod(withMethod, className, propertyNames));
+            generatedMethods.add(generateWithMethod(withMethod, packageName, className, propertyNames));
         }
         return generatedMethods;
     }
 
-    private MethodSpec generateWithMethod(WithMethod withMethod, String className, String[] propertyNames) {
+    private MethodSpec generateWithMethod(WithMethod withMethod, String packageName, String className,
+                String[] propertyNames) {
+        String finalAutoValueClass = className.replaceAll("\\$", "");
         StringBuilder format = new StringBuilder("return new ");
-        format.append(className.replaceAll("\\$", ""));
+        format.append(finalAutoValueClass);
         format.append("(");
         for (int i = 0; i < propertyNames.length; i++) {
             if (i > 0) format.append(", ");
@@ -142,10 +148,24 @@ public class AutoValueWithExtension extends AutoValueExtension {
         }
         format.append(")");
 
+        List<AnnotationSpec> annotationSpecs = new ArrayList<AnnotationSpec>(withMethod.methodAnnotations.size() + 1);
+        annotationSpecs.add(AnnotationSpec.builder(Override.class).build());
+        for (AnnotationMirror methodAnnotation : withMethod.methodAnnotations) {
+            annotationSpecs.add(AnnotationSpec.get(methodAnnotation));
+        }
+        List<Modifier> modifiers = new ArrayList<Modifier>(2);
+        modifiers.add(FINAL);
+        for (Modifier modifier : withMethod.methodModifiers) {
+            if (modifier == Modifier.PUBLIC || modifier == Modifier.PROTECTED) {
+                modifiers.add(modifier);
+                break;
+            }
+        }
+
         return MethodSpec.methodBuilder(withMethod.methodName)
-                .addAnnotation(Override.class)
-                .addModifiers(PUBLIC)
-                .returns(TypeName.get(withMethod.returnType))
+                .addAnnotations(annotationSpecs)
+                .addModifiers(modifiers)
+                .returns(ClassName.get(packageName, finalAutoValueClass))
                 .addParameter(TypeName.get(withMethod.propertyType), withMethod.propertyName)
                 .addStatement(format.toString(), (Object[]) propertyNames)
                 .build();
