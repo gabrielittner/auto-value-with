@@ -20,6 +20,7 @@ import com.google.testing.compile.JavaFileObjects;
 import org.junit.Test;
 
 import javax.tools.JavaFileObject;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static com.google.common.truth.Truth.assertAbout;
@@ -54,6 +55,9 @@ public final class AutoValueWithExtensionTest {
             // public with annotation
             + "public abstract String h();\n"
             + "@Nonnull public abstract Test withH(String h);\n"
+            // property name starting with "with"
+            + "public abstract String withI();\n"
+            + "abstract Test withWithI(String withI);\n"
             + "}\n"
     );
 
@@ -63,26 +67,29 @@ public final class AutoValueWithExtensionTest {
             + "import java.lang.String;\n"
             + "import javax.annotation.Nonnull;\n"
             + "final class AutoValue_Test extends $AutoValue_Test {\n"
-            + "  AutoValue_Test(String a, String b, int c, int d, String e, String f, String g, String h) {\n"
-            + "    super(a, b, c, d, e, f, g, h);\n"
+            + "  AutoValue_Test(String a, String b, int c, int d, String e, String f, String g, String h, String withI) {\n"
+            + "    super(a, b, c, d, e, f, g, h, withI);\n"
             + "  }\n"
             + "  @Override final AutoValue_Test withA(String a) {\n"
-            + "    return new AutoValue_Test(a, b(), c(), d(), e(), f(), g(), h());\n"
+            + "    return new AutoValue_Test(a, b(), c(), d(), e(), f(), g(), h(), withI());\n"
             + "  }\n"
             + "  @Override final AutoValue_Test withC(int c) {\n"
-            + "    return new AutoValue_Test(a(), b(), c, d(), e(), f(), g(), h());\n"
+            + "    return new AutoValue_Test(a(), b(), c, d(), e(), f(), g(), h(), withI());\n"
             + "  }\n"
             + "  @Override public final AutoValue_Test withE(String e) {\n"
-            + "    return new AutoValue_Test(a(), b(), c(), d(), e, f(), g(), h());\n"
+            + "    return new AutoValue_Test(a(), b(), c(), d(), e, f(), g(), h(), withI());\n"
             + "  }\n"
             + "  @Override protected final AutoValue_Test withF(String f) {\n"
-            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f, g(), h());\n"
+            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f, g(), h(), withI());\n"
             + "  }\n"
             + "  @Override @Nonnull final AutoValue_Test withG(String g) {\n"
-            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g, h());\n"
+            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g, h(), withI());\n"
             + "  }\n"
             + "  @Override @Nonnull public final AutoValue_Test withH(String h) {\n"
-            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g(), h);\n"
+            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g(), h, withI());\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withWithI(String withI) {\n"
+            + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g(), h(), withI);\n"
             + "  }\n"
             + "}\n"
     );
@@ -94,4 +101,111 @@ public final class AutoValueWithExtensionTest {
         .and()
         .generatesSources(expectedSource);
   }
+
+  @Test public void returnsSuperType() {
+    JavaFileObject source1 = JavaFileObjects.forSourceString("test.AbstractTest", ""
+                    + "package test;\n"
+                    + "import com.google.auto.value.AutoValue;\n"
+                    + "public abstract class AbstractTest {\n"
+                    + "public abstract String a();\n"
+                    + "abstract AbstractTest withA(String a);"
+                    + "}\n"
+    );
+    JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test extends AbstractTest {\n"
+            + "}\n"
+    );
+
+    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+            + "package test;\n"
+            + "import java.lang.Override;\n"
+            + "import java.lang.String;\n"
+            + "final class AutoValue_Test extends $AutoValue_Test {\n"
+            + "  AutoValue_Test(String a) {\n"
+            + "    super(a);\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withA(String a) {\n"
+            + "    return new AutoValue_Test(a);\n"
+            + "  }\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Arrays.asList(source1, source2))
+            .processedWith(new AutoValueProcessor())
+            .compilesWithoutError()
+            .and()
+            .generatesSources(expectedSource);
+  }
+
+  @Test public void tooManyParameters() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withA(String a, String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test has 2 parameters, expected 1");
+  }
+
+  @Test public void wrongMethodName() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withB(String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("test.Test doesn't have property with name b which is required for withB()");
+  }
+
+  @Test public void wrongParameterName() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withA(String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test has \"b\" as parameter, expected \"a\"");
+  }
+
+  @Test public void wrongReturnType() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract String withA(String a);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test returns java.lang.String, expected test.Test");
+  }
+
 }
