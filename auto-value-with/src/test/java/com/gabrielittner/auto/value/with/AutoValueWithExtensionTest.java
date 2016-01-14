@@ -94,4 +94,73 @@ public final class AutoValueWithExtensionTest {
         .and()
         .generatesSources(expectedSource);
   }
+
+  @Test public void tooManyParameters() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withA(String a, String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test has 2 parameters, expected 1");
+  }
+
+  @Test public void wrongMethodName() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withB(String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("test.Test doesn't have property with name b which is required for withB()");
+  }
+
+  @Test public void wrongParameterName() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withA(String b);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test has \"b\" as parameter, expected \"a\"");
+  }
+
+  @Test public void wrongReturnType() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract String withA(String a);"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("withA() in test.Test returns java.lang.String, expected test.Test");
+  }
+
 }

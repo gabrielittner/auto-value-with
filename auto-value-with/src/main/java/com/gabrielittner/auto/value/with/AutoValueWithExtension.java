@@ -29,23 +29,32 @@ public class AutoValueWithExtension extends AutoValueExtension {
                 continue;
             }
             List<? extends VariableElement> parameters = method.getParameters();
-            if (parameters.size() == 0) {
+            int parameterCount = parameters.size();
+            if (parameterCount == 0) {
                 continue;
             }
-            if (parameters.size() > 1) {
-                throw new IllegalArgumentException("AutoValue class has with method with " + parameters.size()
-                        + " parameters");
+            if (parameterCount > 1) {
+                throw new IllegalArgumentException(String.format("%s() in %s has %d parameters, expected 1",
+                    methodName, autoValueClass, parameterCount));
+            }
+
+            int propertyNameStart = "with".length();
+            String methodPropertyName = Character.toLowerCase(methodName.charAt(propertyNameStart))
+                    + methodName.substring("with".length() + 1);
+            if (!propertyNames.contains(methodPropertyName)) {
+                throw new IllegalArgumentException(String.format("%s doesn't have property with name %s which"
+                        + " is required for %s()", autoValueClass, methodPropertyName, methodName));
             }
             VariableElement parameter = parameters.get(0);
             String parameterName = parameter.getSimpleName().toString();
-            if (!propertyNames.contains(parameterName)) {
-                throw new IllegalArgumentException("Unknown property: " + parameterName);
+            if (!methodPropertyName.equals(parameterName)) {
+                throw new IllegalArgumentException(String.format("%s() in %s has \"%s\" as parameter, expected \"%s\"",
+                        methodName, autoValueClass, parameterName, methodPropertyName));
             }
-            //TODO make sure methodName.substring(4).firstCharacterToLowerCase().equals(parameterName)
             TypeMirror returnType = method.getReturnType();
             if (!returnType.equals(autoValueClass.asType())) {
-                throw new IllegalArgumentException("AutoValue class has with method that returns " + returnType
-                        + " parameters, expected " + autoValueClass);
+                throw new IllegalArgumentException(String.format("%s() in %s returns %s, expected %s",
+                        methodName, autoValueClass, returnType, autoValueClass));
             }
             withMethods.add(new WithMethod(methodName, method.getModifiers(), method.getAnnotationMirrors(),
                     parameterName, parameter.asType()));
