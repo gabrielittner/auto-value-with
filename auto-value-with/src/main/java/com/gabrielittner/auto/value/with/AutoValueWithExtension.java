@@ -18,6 +18,8 @@ import static javax.lang.model.element.Modifier.FINAL;
 @AutoService(AutoValueExtension.class)
 public class AutoValueWithExtension extends AutoValueExtension {
 
+    private static final String PREFIX = "with";
+
     private static List<WithMethod> getWithMethods(Context context) {
         ProcessingEnvironment environment = context.processingEnvironment();
         TypeElement autoValueClass = context.autoValueClass();
@@ -27,7 +29,7 @@ public class AutoValueWithExtension extends AutoValueExtension {
         List<WithMethod> withMethods = new ArrayList<WithMethod>(methods.size());
         for (ExecutableElement method : methods) {
             String methodName = method.getSimpleName().toString();
-            if (!methodName.startsWith("with")) {
+            if (!methodName.startsWith(PREFIX)) {
                 continue;
             }
             List<? extends VariableElement> parameters = method.getParameters();
@@ -40,9 +42,9 @@ public class AutoValueWithExtension extends AutoValueExtension {
                     methodName, autoValueClass, parameterCount));
             }
 
-            int propertyNameStart = "with".length();
+            int propertyNameStart = PREFIX.length();
             String methodPropertyName = Character.toLowerCase(methodName.charAt(propertyNameStart))
-                    + methodName.substring("with".length() + 1);
+                    + methodName.substring(propertyNameStart + 1);
             if (!propertyNames.contains(methodPropertyName)) {
                 throw new IllegalArgumentException(String.format("%s doesn't have property with name %s which"
                         + " is required for %s()", autoValueClass, methodPropertyName, methodName));
