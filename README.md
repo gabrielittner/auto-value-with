@@ -1,4 +1,4 @@
-# AutoValue: Cursor Extension
+# AutoValue: With Extension
 
 An extension for Google's [AutoValue][auto] that implements "with-er" methods for AutoValue objects.
 
