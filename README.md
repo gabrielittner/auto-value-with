@@ -50,7 +50,7 @@ Snapshots of the development version are available in [Sonatype's `snapshots` re
 
 
 ```
-Copyright 2015 Gabriel Ittner.
+Copyright 2016 Gabriel Ittner.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
