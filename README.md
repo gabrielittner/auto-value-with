@@ -14,7 +14,7 @@ Include auto-value-with in your project and "with-er" methods to your auto-value
   abstract String name();
   abstract String email();
 
-  abstract String withEmail(String email);
+  abstract User withEmail(String email);
 }
 ```
 
