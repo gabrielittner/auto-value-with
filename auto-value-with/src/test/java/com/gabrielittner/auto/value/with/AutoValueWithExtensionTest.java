@@ -140,6 +140,37 @@ public final class AutoValueWithExtensionTest {
             .generatesSources(expectedSource);
   }
 
+  @Test public void genericClass() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test<T> {\n"
+            + "public abstract T t();\n"
+            + "abstract Test<T> withT(T t);"
+            + "}\n"
+    );
+
+    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+            + "package test;\n"
+            + "import java.lang.Override;\n"
+            + "final class AutoValue_Test<T> extends $AutoValue_Test<T> {\n"
+            + "  AutoValue_Test(T t) {\n"
+            + "    super(t);\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withT(T t) {\n"
+            + "    return new AutoValue_Test(t);\n"
+            + "  }\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .compilesWithoutError()
+            .and()
+            .generatesSources(expectedSource);
+  }
+
   @Test public void tooManyParameters() {
     JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
             + "package test;\n"

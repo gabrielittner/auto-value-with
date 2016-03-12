@@ -104,15 +104,34 @@ public class AutoValueWithExtension extends AutoValueExtension {
         String packageName = context.packageName();
         Map<String, ExecutableElement> properties = context.properties();
 
+        TypeVariableName[] typeVariables = getTypeVariables(context.autoValueClass().getTypeParameters());
+
+        TypeName superClass;
+        ClassName superClassWithoutParameters = ClassName.get(packageName, classToExtend);
+        if (typeVariables.length > 0) {
+            superClass = ParameterizedTypeName.get(superClassWithoutParameters, typeVariables);
+        } else {
+            superClass = superClassWithoutParameters;
+        }
+
         TypeSpec.Builder subclass = TypeSpec.classBuilder(className)
                 .addModifiers(isFinal ? FINAL : ABSTRACT)
-                .superclass(ClassName.get(packageName, classToExtend))
+                .addTypeVariables(Arrays.asList(typeVariables))
+                .superclass(superClass)
                 .addMethod(generateConstructor(properties))
                 .addMethods(generateWithMethods(context, className, properties));
 
         return JavaFile.builder(packageName, subclass.build())
                 .build()
                 .toString();
+    }
+
+    private TypeVariableName[] getTypeVariables(List<? extends TypeParameterElement> typeParameters) {
+        TypeVariableName[] typeVariables = new TypeVariableName[typeParameters.size()];
+        for (int i = 0; i < typeParameters.size(); i++) {
+            typeVariables[i] = TypeVariableName.get(typeParameters.get(i));
+        }
+        return typeVariables;
     }
 
     private MethodSpec generateConstructor(Map<String, ExecutableElement> properties) {
