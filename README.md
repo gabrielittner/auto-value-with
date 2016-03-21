@@ -30,16 +30,16 @@ By convention "with-er" methods have to use with as prefix and use the exact pro
 Add a Gradle dependency:
 
 ```groovy
-apt 'com.gabrielittner.auto.cursor:auto-value-with:0.1-SNAPSHOT'
+apt 'com.gabrielittner.auto.cursor:auto-value-with:0.1.0'
 ```
 (Using the [android-apt][apt] plugin)
 
 or Maven:
 ```xml
 <dependency>
-  <groupId>com.squareup.auto.value</groupId>
-  <artifactId>auto-value-redacted</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <groupId>com.gabrielittner.auto.value</groupId>
+  <artifactId>auto-value-with</artifactId>
+  <version>0.1.0</version>
   <scope>provided</scope>
 </dependency>
 ```
