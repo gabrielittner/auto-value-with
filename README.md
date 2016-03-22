@@ -30,7 +30,7 @@ By convention "with-er" methods have to use with as prefix and use the exact pro
 Add a Gradle dependency:
 
 ```groovy
-apt 'com.gabrielittner.auto.cursor:auto-value-with:0.1.0'
+apt 'com.gabrielittner.auto.value:auto-value-with:0.1.0'
 ```
 (Using the [android-apt][apt] plugin)
 
