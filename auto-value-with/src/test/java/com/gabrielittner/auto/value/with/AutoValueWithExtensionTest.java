@@ -185,7 +185,7 @@ public final class AutoValueWithExtensionTest {
             .that(Collections.singletonList(source))
             .processedWith(new AutoValueProcessor())
             .failsToCompile()
-            .withErrorContaining("withA() in test.Test has 2 parameters, expected 1");
+            .withErrorContaining("Expected single argument of type java.lang.String for withA()");
   }
 
   @Test public void wrongMethodName() {
@@ -205,13 +205,13 @@ public final class AutoValueWithExtensionTest {
             .withErrorContaining("test.Test doesn't have property with name b which is required for withB()");
   }
 
-  @Test public void wrongParameterName() {
+  @Test public void wrongParameterType() {
     JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
             + "package test;\n"
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test {\n"
             + "public abstract String a();\n"
-            + "abstract Test withA(String b);"
+            + "abstract Test withA(int b);"
             + "}\n"
     );
 
@@ -219,7 +219,7 @@ public final class AutoValueWithExtensionTest {
             .that(Collections.singletonList(source))
             .processedWith(new AutoValueProcessor())
             .failsToCompile()
-            .withErrorContaining("withA() in test.Test has \"b\" as parameter, expected \"a\"");
+            .withErrorContaining("Expected single argument of type java.lang.String for withA()");
   }
 
   @Test public void wrongReturnType() {
