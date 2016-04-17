@@ -239,4 +239,39 @@ public final class AutoValueWithExtensionTest {
             .withErrorContaining("withA() in test.Test returns java.lang.String, expected test.Test");
   }
 
+  @Test public void dontImplementNonAbstractWithMethod() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "  public abstract String a();\n"
+            + "  public abstract String b();\n"
+            + "  abstract Test withA(String a);\n"
+            + "  Test withB(String b) {"
+            + "    return null;"
+            + "  }\n"
+            + "}\n"
+    );
+
+    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+            + "package test;\n"
+            + "import java.lang.Override;\n"
+            + "import java.lang.String;\n"
+            + "final class AutoValue_Test extends $AutoValue_Test {\n"
+            + "  AutoValue_Test(String a, String b) {\n"
+            + "    super(a, b);\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withA(String a) {\n"
+            + "    return new AutoValue_Test(a, b());\n"
+            + "  }\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .compilesWithoutError()
+            .and()
+            .generatesSources(expectedSource);
+  }
 }
