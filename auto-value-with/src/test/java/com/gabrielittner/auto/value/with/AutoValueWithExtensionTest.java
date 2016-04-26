@@ -274,4 +274,40 @@ public final class AutoValueWithExtensionTest {
             .and()
             .generatesSources(expectedSource);
   }
+
+  @Test public void prefixedMethods() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract int getA();\n"
+            + "public abstract boolean isB();\n"
+            + "abstract Test withA(int a);"
+            + "abstract Test withB(boolean b);"
+            + "}\n"
+    );
+
+    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+            + "package test;\n"
+            + "import java.lang.Override;\n"
+            + "final class AutoValue_Test extends $AutoValue_Test {\n"
+            + "  AutoValue_Test(int a, boolean b) {\n"
+            + "    super(a, b);\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withA(int a) {\n"
+            + "    return new AutoValue_Test(a, isB());\n"
+            + "  }\n"
+            + "  @Override final AutoValue_Test withB(boolean b) {\n"
+            + "    return new AutoValue_Test(getA(), b);\n"
+            + "  }\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .compilesWithoutError()
+            .and()
+            .generatesSources(expectedSource);
+  }
 }
