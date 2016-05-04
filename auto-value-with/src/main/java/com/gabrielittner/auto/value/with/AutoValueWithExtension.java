@@ -1,36 +1,34 @@
 package com.gabrielittner.auto.value.with;
 
+import com.gabrielittner.auto.value.util.Property;
 import com.google.auto.common.MoreElements;
 import com.google.auto.service.AutoService;
 import com.google.auto.value.extension.AutoValueExtension;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.squareup.javapoet.AnnotationSpec;
-import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
-import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
-import com.squareup.javapoet.TypeVariableName;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
-import static javax.lang.model.element.Modifier.ABSTRACT;
+import static com.gabrielittner.auto.value.util.AutoValueUtil.getFinalClassClassName;
+import static com.gabrielittner.auto.value.util.AutoValueUtil.newFinalClassConstructorCall;
+import static com.gabrielittner.auto.value.util.AutoValueUtil.newTypeSpecBuilder;
 import static javax.lang.model.element.Modifier.FINAL;
 
 @AutoService(AutoValueExtension.class)
@@ -41,10 +39,10 @@ public class AutoValueWithExtension extends AutoValueExtension {
     private static List<WithMethod> getWithMethods(Context context) {
         ProcessingEnvironment environment = context.processingEnvironment();
         TypeElement autoValueClass = context.autoValueClass();
-        ImmutableSet<ExecutableElement> methods = MoreElements.getLocalAndInheritedMethods(autoValueClass,
-                environment.getElementUtils());
-        Set<String> propertyNames = context.properties().keySet();
-        List<WithMethod> withMethods = new ArrayList<WithMethod>(methods.size());
+        ImmutableSet<ExecutableElement> methods = MoreElements.getLocalAndInheritedMethods(
+                autoValueClass, environment.getElementUtils());
+        Map<String, ExecutableElement> propertyNames = context.properties();
+        List<WithMethod> withMethods = new ArrayList<>(methods.size());
         for (ExecutableElement method : methods) {
             String methodName = method.getSimpleName().toString();
             if (!method.getModifiers().contains(Modifier.ABSTRACT)) {
@@ -54,54 +52,54 @@ public class AutoValueWithExtension extends AutoValueExtension {
                 continue;
             }
             List<? extends VariableElement> parameters = method.getParameters();
-            int parameterCount = parameters.size();
-            if (parameterCount == 0) {
+            if (parameters.size() == 0) {
                 continue;
             }
-            if (parameterCount > 1) {
-                throw new IllegalArgumentException(String.format("%s() in %s has %d parameters, expected 1",
-                    methodName, autoValueClass, parameterCount));
+
+            Property property;
+            String propertyName = removePrefix(methodName);
+            ExecutableElement element = propertyNames.get(propertyName);
+            if (element != null) {
+                property = new Property(propertyName, element);
+            } else {
+                throw new IllegalArgumentException(String.format("%s doesn't have property with name"
+                        + " %s which is required for %s()", autoValueClass, propertyName, methodName));
             }
 
-            int propertyNameStart = PREFIX.length();
-            String methodPropertyName = Character.toLowerCase(methodName.charAt(propertyNameStart))
-                    + methodName.substring(propertyNameStart + 1);
-            if (!propertyNames.contains(methodPropertyName)) {
-                throw new IllegalArgumentException(String.format("%s doesn't have property with name %s which"
-                        + " is required for %s()", autoValueClass, methodPropertyName, methodName));
+            if (parameters.size() != 1
+                    || !TypeName.get(parameters.get(0).asType()).equals(property.type())) {
+                throw new IllegalArgumentException(String.format("Expected single argument of type"
+                        + " %s for %s()", property.type(), methodName));
             }
-            VariableElement parameter = parameters.get(0);
-            String parameterName = parameter.getSimpleName().toString();
-            if (!methodPropertyName.equals(parameterName)) {
-                throw new IllegalArgumentException(String.format("%s() in %s has \"%s\" as parameter, expected \"%s\"",
-                        methodName, autoValueClass, parameterName, methodPropertyName));
-            }
-
             TypeMirror returnType = method.getReturnType();
             if (!environment.getTypeUtils().isAssignable(autoValueClass.asType(), returnType)) {
                 throw new IllegalArgumentException(String.format("%s() in %s returns %s, expected %s",
                         methodName, autoValueClass, returnType, autoValueClass));
             }
-            withMethods.add(new WithMethod(methodName, method.getModifiers(), method.getAnnotationMirrors(),
-                    parameterName, parameter.asType()));
+            withMethods.add(new WithMethod(methodName, method.getModifiers(),
+                    method.getAnnotationMirrors(), property));
         }
         return withMethods;
+    }
+
+    private static String removePrefix(String name) {
+        return Character.toLowerCase(name.charAt(PREFIX.length()))
+                + name.substring(PREFIX.length() + 1);
     }
 
     private static class WithMethod {
         private final String methodName;
         private final Set<Modifier> methodModifiers;
         private final List<? extends AnnotationMirror> methodAnnotations;
-        private final String propertyName;
-        private final TypeMirror propertyType;
 
-        WithMethod(String methodName, Set<Modifier> methodModifiers, List<? extends AnnotationMirror> methodAnnotations,
-                   String propertyName, TypeMirror propertyType) {
+        private final Property property;
+
+        WithMethod(String methodName, Set<Modifier> methodModifiers,
+                List<? extends AnnotationMirror> methodAnnotations, Property property) {
             this.methodName = methodName;
             this.methodModifiers = methodModifiers;
             this.methodAnnotations = methodAnnotations;
-            this.propertyName = propertyName;
-            this.propertyType = propertyType;
+            this.property = property;
         }
     }
 
@@ -113,7 +111,7 @@ public class AutoValueWithExtension extends AutoValueExtension {
     @Override
     public Set<String> consumeProperties(Context context) {
         List<WithMethod> withMethods = getWithMethods(context);
-        Set<String> consumedProperties = new HashSet<String>(withMethods.size());
+        Set<String> consumedProperties = new HashSet<>(withMethods.size());
         for (WithMethod method : withMethods) {
             consumedProperties.add(method.methodName);
         }
@@ -121,93 +119,44 @@ public class AutoValueWithExtension extends AutoValueExtension {
     }
 
     @Override public String generateClass(Context context, String className, String classToExtend,
-                                          boolean isFinal) {
-        String packageName = context.packageName();
-        Map<String, ExecutableElement> properties = context.properties();
+            boolean isFinal) {
+        TypeSpec.Builder subclass = newTypeSpecBuilder(context, className, classToExtend, isFinal)
+                .addMethods(generateWithMethods(context));
 
-        TypeVariableName[] typeVariables = getTypeVariables(context.autoValueClass().getTypeParameters());
-
-        TypeName superClass;
-        ClassName superClassWithoutParameters = ClassName.get(packageName, classToExtend);
-        if (typeVariables.length > 0) {
-            superClass = ParameterizedTypeName.get(superClassWithoutParameters, typeVariables);
-        } else {
-            superClass = superClassWithoutParameters;
-        }
-
-        TypeSpec.Builder subclass = TypeSpec.classBuilder(className)
-                .addModifiers(isFinal ? FINAL : ABSTRACT)
-                .addTypeVariables(Arrays.asList(typeVariables))
-                .superclass(superClass)
-                .addMethod(generateConstructor(properties))
-                .addMethods(generateWithMethods(context, className, properties));
-
-        return JavaFile.builder(packageName, subclass.build())
+        return JavaFile.builder(context.packageName(), subclass.build())
                 .build()
                 .toString();
     }
 
-    private TypeVariableName[] getTypeVariables(List<? extends TypeParameterElement> typeParameters) {
-        TypeVariableName[] typeVariables = new TypeVariableName[typeParameters.size()];
-        for (int i = 0; i < typeParameters.size(); i++) {
-            typeVariables[i] = TypeVariableName.get(typeParameters.get(i));
-        }
-        return typeVariables;
-    }
-
-    private MethodSpec generateConstructor(Map<String, ExecutableElement> properties) {
-        List<ParameterSpec> params = Lists.newArrayList();
-        for (Map.Entry<String, ExecutableElement> entry : properties.entrySet()) {
-            TypeName typeName = TypeName.get(entry.getValue().getReturnType());
-            params.add(ParameterSpec.builder(typeName, entry.getKey()).build());
-        }
-
-        StringBuilder superFormat = new StringBuilder("super(");
-        for (int i = properties.size(); i > 0; i--) {
-            superFormat.append("$N");
-            if (i > 1) superFormat.append(", ");
-        }
-        superFormat.append(")");
-
-        return MethodSpec.constructorBuilder()
-                .addParameters(params)
-                .addStatement(superFormat.toString(), properties.keySet().toArray())
-                .build();
-    }
-
-    private List<MethodSpec> generateWithMethods(Context context, String className,
-                                                 Map<String, ExecutableElement> properties) {
+    private List<MethodSpec> generateWithMethods(Context context) {
         List<WithMethod> withMethods = getWithMethods(context);
-        String packageName = context.packageName();
-        List<MethodSpec> generatedMethods = new ArrayList<MethodSpec>(withMethods.size());
-        Set<String> keySet = properties.keySet();
-        String[] propertyNames = new String[keySet.size()];
-        propertyNames = keySet.toArray(propertyNames);
+        ImmutableList<Property> properties = properties(context);
+        List<MethodSpec> generatedMethods = new ArrayList<>(withMethods.size());
         for (WithMethod withMethod : withMethods) {
-            generatedMethods.add(generateWithMethod(withMethod, packageName, className, propertyNames));
+            generatedMethods.add(generateWithMethod(withMethod, context, properties));
         }
         return generatedMethods;
     }
 
-    private MethodSpec generateWithMethod(WithMethod withMethod, String packageName, String className,
-                String[] propertyNames) {
-        String finalAutoValueClass = className.replaceAll("\\$", "");
-        StringBuilder format = new StringBuilder("return new ");
-        format.append(finalAutoValueClass);
-        format.append("(");
+    private MethodSpec generateWithMethod(WithMethod withMethod, Context context,
+            ImmutableList<Property> properties) {
+        String[] propertyNames = new String[properties.size()];
         for (int i = 0; i < propertyNames.length; i++) {
-            if (i > 0) format.append(", ");
-            format.append("$L");
-            if (!propertyNames[i].equals(withMethod.propertyName)) format.append("()");
+            Property property = properties.get(i);
+            if (property.humanName().equals(withMethod.property.humanName())) {
+                propertyNames[i] = property.humanName();
+            } else {
+                propertyNames[i] = property.methodName() + "()";
+            }
         }
-        format.append(")");
 
-        List<AnnotationSpec> annotationSpecs = new ArrayList<AnnotationSpec>(withMethod.methodAnnotations.size() + 1);
+        List<AnnotationSpec> annotationSpecs = new ArrayList<>(withMethod.methodAnnotations.size() + 1);
         annotationSpecs.add(AnnotationSpec.builder(Override.class).build());
         for (AnnotationMirror methodAnnotation : withMethod.methodAnnotations) {
             annotationSpecs.add(AnnotationSpec.get(methodAnnotation));
         }
-        List<Modifier> modifiers = new ArrayList<Modifier>(2);
+
+        List<Modifier> modifiers = new ArrayList<>(2);
         modifiers.add(FINAL);
         for (Modifier modifier : withMethod.methodModifiers) {
             if (modifier == Modifier.PUBLIC || modifier == Modifier.PROTECTED) {
@@ -219,10 +168,19 @@ public class AutoValueWithExtension extends AutoValueExtension {
         return MethodSpec.methodBuilder(withMethod.methodName)
                 .addAnnotations(annotationSpecs)
                 .addModifiers(modifiers)
-                .returns(ClassName.get(packageName, finalAutoValueClass))
-                .addParameter(TypeName.get(withMethod.propertyType), withMethod.propertyName)
-                .addStatement(format.toString(), (Object[]) propertyNames)
+                .returns(getFinalClassClassName(context))
+                .addParameter(withMethod.property.type(), withMethod.property.humanName())
+                .addCode("return ")
+                .addCode(newFinalClassConstructorCall(context, propertyNames))
                 .build();
 
+    }
+
+    private static ImmutableList<Property> properties(AutoValueExtension.Context context) {
+        ImmutableList.Builder<Property> values = ImmutableList.builder();
+        for (Map.Entry<String, ExecutableElement> entry : context.properties().entrySet()) {
+            values.add(new Property(entry.getKey(), entry.getValue()));
+        }
+        return values.build();
     }
 }
