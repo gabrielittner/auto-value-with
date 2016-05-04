@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 0.1.2 *(2016-05-05)*
+----------------------------
+
+#### Supports: AutoValue 1.2
+
+- add support for properties prefixed with get` and `is``
+
 Version 0.1.1 *(2016-04-17)*
 ----------------------------
 
