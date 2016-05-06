@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 0.1.3 *(2016-05-06)*
+----------------------------
+
+#### Supports: AutoValue 1.2
+
+- fix support for nested AutoValue classes
+
 Version 0.1.2 *(2016-05-05)*
 ----------------------------
 

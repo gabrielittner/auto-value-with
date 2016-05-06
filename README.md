@@ -30,7 +30,7 @@ By convention "with-er" methods have to use with as prefix and use the exact pro
 Add a Gradle dependency:
 
 ```groovy
-apt 'com.gabrielittner.auto.value:auto-value-with:0.1.2'
+apt 'com.gabrielittner.auto.value:auto-value-with:0.1.3'
 ```
 (Using the [android-apt][apt] plugin)
 
@@ -39,7 +39,7 @@ or Maven:
 <dependency>
   <groupId>com.gabrielittner.auto.value</groupId>
   <artifactId>auto-value-with</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
   <scope>provided</scope>
 </dependency>
 ```
