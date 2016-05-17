@@ -24,8 +24,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 
-import static com.google.auto.common.MoreElements.getLocalAndInheritedMethods;
-
 class WithMethod {
 
     private static final String PREFIX = "with";
@@ -87,30 +85,15 @@ class WithMethod {
     }
 
     static ImmutableSet<ExecutableElement> filterMethods(Context context) {
-        ImmutableSet<ExecutableElement> methods = getAbstractMethods(context);
-        List<ExecutableElement> withMethods = new ArrayList<>(methods.size());
-        for (ExecutableElement method : methods) {
+        Set<ExecutableElement> abstractMethods = context.abstractMethods();
+        List<ExecutableElement> withMethods = new ArrayList<>(abstractMethods.size());
+        for (ExecutableElement method : abstractMethods) {
             if (method.getSimpleName().toString().startsWith(PREFIX)
                     && method.getParameters().size() > 0) {
                 withMethods.add(method);
             }
         }
         return ImmutableSet.copyOf(withMethods);
-    }
-
-    private static ImmutableSet<ExecutableElement> getAbstractMethods(Context context) {
-        //TODO AutoValue 1.3: replace with context.getAbstractMethods()
-        ProcessingEnvironment environment = context.processingEnvironment();
-        TypeElement autoValueClass = context.autoValueClass();
-        ImmutableSet<ExecutableElement> methods =
-                getLocalAndInheritedMethods(autoValueClass, environment.getElementUtils());
-        List<ExecutableElement> abstractMethods = new ArrayList<>(methods.size());
-        for (ExecutableElement method : methods) {
-            if (method.getModifiers().contains(Modifier.ABSTRACT)) {
-                abstractMethods.add(method);
-            }
-        }
-        return ImmutableSet.copyOf(abstractMethods);
     }
 
     private static String removePrefix(String name) {
