@@ -13,7 +13,6 @@ import com.squareup.javapoet.TypeSpec;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.lang.model.element.AnnotationMirror;
@@ -23,8 +22,6 @@ import javax.lang.model.element.Modifier;
 import static com.gabrielittner.auto.value.util.AutoValueUtil.getAutoValueClassClassName;
 import static com.gabrielittner.auto.value.util.AutoValueUtil.newFinalClassConstructorCall;
 import static com.gabrielittner.auto.value.util.AutoValueUtil.newTypeSpecBuilder;
-import static com.gabrielittner.auto.value.with.WithMethod.filterMethods;
-import static com.gabrielittner.auto.value.with.WithMethod.getWithMethods;
 import static javax.lang.model.element.Modifier.FINAL;
 
 @AutoService(AutoValueExtension.class)
@@ -32,13 +29,13 @@ public class AutoValueWithExtension extends AutoValueExtension {
 
     @Override
     public boolean applicable(Context context) {
-        return filterMethods(context).size() > 0;
+        return WithMethod.filterMethods(context).size() > 0;
     }
 
     @Override
     public Set<String> consumeProperties(Context context) {
         //TODO AutoValue 1.3: use consumeMethods(Context) instead
-        ImmutableSet<ExecutableElement> methods = filterMethods(context);
+        ImmutableSet<ExecutableElement> methods = WithMethod.filterMethods(context);
         Set<String> consumedProperties = new HashSet<>(methods.size());
         for (ExecutableElement method : methods) {
             consumedProperties.add(method.getSimpleName().toString());
@@ -57,8 +54,8 @@ public class AutoValueWithExtension extends AutoValueExtension {
     }
 
     private List<MethodSpec> generateWithMethods(Context context) {
-        List<WithMethod> withMethods = getWithMethods(context);
-        ImmutableList<Property> properties = properties(context);
+        List<WithMethod> withMethods = WithMethod.getWithMethods(context);
+        ImmutableList<Property> properties = Property.buildProperties(context);
         List<MethodSpec> generatedMethods = new ArrayList<>(withMethods.size());
         for (WithMethod withMethod : withMethods) {
             generatedMethods.add(generateWithMethod(withMethod, context, properties));
@@ -101,14 +98,5 @@ public class AutoValueWithExtension extends AutoValueExtension {
                 .addCode("return ")
                 .addCode(newFinalClassConstructorCall(context, propertyNames))
                 .build();
-
-    }
-
-    private static ImmutableList<Property> properties(AutoValueExtension.Context context) {
-        ImmutableList.Builder<Property> values = ImmutableList.builder();
-        for (Map.Entry<String, ExecutableElement> entry : context.properties().entrySet()) {
-            values.add(new Property(entry.getKey(), entry.getValue()));
-        }
-        return values.build();
     }
 }
