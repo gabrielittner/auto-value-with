@@ -5,16 +5,22 @@ import com.google.auto.value.extension.AutoValueExtension.Context;
 import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.TypeName;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 
 import static com.google.auto.common.MoreElements.getLocalAndInheritedMethods;
 
@@ -39,6 +45,7 @@ class WithMethod {
     static List<WithMethod> getWithMethods(Context context) {
         ImmutableSet<ExecutableElement> methods = filterMethods(context);
         ProcessingEnvironment environment = context.processingEnvironment();
+        Types typeUtils = environment.getTypeUtils();
         TypeElement autoValueClass = context.autoValueClass();
 
         Map<String, ExecutableElement> properties = context.properties();
@@ -62,8 +69,8 @@ class WithMethod {
                 throw new IllegalArgumentException(String.format("Expected single argument of type"
                         + " %s for %s()", property.type(), methodName));
             }
-            TypeMirror returnType = method.getReturnType();
-            if (!environment.getTypeUtils().isAssignable(autoValueClass.asType(), returnType)) {
+            TypeMirror returnType = getResolvedReturnType(typeUtils, autoValueClass, method);
+            if (!typeUtils.isAssignable(autoValueClass.asType(), returnType)) {
                 throw new IllegalArgumentException(String.format("%s() in %s returns %s, expected %s",
                         methodName, autoValueClass, returnType, autoValueClass));
             }
@@ -96,5 +103,53 @@ class WithMethod {
     private static String removePrefix(String name) {
         return Character.toLowerCase(name.charAt(PREFIX.length()))
                 + name.substring(PREFIX.length() + 1);
+    }
+
+
+    static TypeMirror getResolvedReturnType(
+            Types typeUtils, TypeElement type, ExecutableElement method) {
+        TypeMirror returnType = method.getReturnType();
+        if (returnType.getKind() == TypeKind.TYPEVAR) {
+            List<TypeElement> hierarchy = getHierarchyUntilClassWithElement(typeUtils, type, method);
+            return resolveGenericType(hierarchy, returnType);
+        }
+        return returnType;
+    }
+
+    private static List<TypeElement> getHierarchyUntilClassWithElement(
+            Types typeUtils, TypeElement start, Element target) {
+        List<TypeElement> classHierarchy = new ArrayList<>();
+        classHierarchy.add(start);
+        TypeElement element = start;
+        while (!element.getEnclosedElements().contains(target)) {
+            element = (TypeElement) typeUtils.asElement(element.getSuperclass());
+            classHierarchy.add(element);
+        }
+        Collections.reverse(classHierarchy);
+        return classHierarchy;
+    }
+
+    private static TypeMirror resolveGenericType(List<TypeElement> hierarchy, TypeMirror type) {
+        int position = indexOfParameter(hierarchy.get(0).getTypeParameters(), type.toString());
+        for (int i = 1; i < hierarchy.size(); i++) {
+            TypeElement current = hierarchy.get(i);
+            type = ((DeclaredType) current.getSuperclass()).getTypeArguments().get(position);
+
+            if (type.getKind() != TypeKind.TYPEVAR) {
+                return type;
+            }
+
+            position = indexOfParameter(current.getTypeParameters(), type.toString());
+        }
+        throw new IllegalArgumentException("Couldn't resolve type " + type);
+    }
+
+    private static int indexOfParameter(List<? extends TypeParameterElement> params, String param) {
+        for (int i = 0; i < params.size(); i++) {
+            if (params.get(i).getSimpleName().toString().equals(param)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Param " + param + "not not found in list");
     }
 }
