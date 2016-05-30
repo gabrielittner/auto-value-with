@@ -17,11 +17,10 @@ package com.gabrielittner.auto.value.with;
 
 import com.google.auto.value.processor.AutoValueProcessor;
 import com.google.testing.compile.JavaFileObjects;
-import org.junit.Test;
-
-import javax.tools.JavaFileObject;
 import java.util.Arrays;
 import java.util.Collections;
+import javax.tools.JavaFileObject;
+import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertAbout;
 import static com.google.testing.compile.JavaSourcesSubjectFactory.javaSources;
@@ -109,12 +108,15 @@ public final class AutoValueWithExtensionTest {
                     + "public abstract class AbstractTest {\n"
                     + "public abstract String a();\n"
                     + "abstract AbstractTest withA(String a);"
+                    + "public abstract String b();\n"
+                    + "abstract AbstractTest withB(String B);"
                     + "}\n"
     );
     JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test", ""
             + "package test;\n"
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test extends AbstractTest {\n"
+            +     "@Override abstract Test withB(String b);"
             + "}\n"
     );
 
@@ -123,11 +125,14 @@ public final class AutoValueWithExtensionTest {
             + "import java.lang.Override;\n"
             + "import java.lang.String;\n"
             + "final class AutoValue_Test extends $AutoValue_Test {\n"
-            + "  AutoValue_Test(String a) {\n"
-            + "    super(a);\n"
+            + "  AutoValue_Test(String a, String b) {\n"
+            + "    super(a, b);\n"
             + "  }\n"
             + "  @Override final Test withA(String a) {\n"
-            + "    return new AutoValue_Test(a);\n"
+            + "    return new AutoValue_Test(a, b());\n"
+            + "  }\n"
+            + "  @Override final Test withB(String b) {\n"
+            + "    return new AutoValue_Test(a(), b);\n"
             + "  }\n"
             + "}\n"
     );

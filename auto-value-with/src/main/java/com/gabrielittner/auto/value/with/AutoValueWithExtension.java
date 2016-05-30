@@ -9,12 +9,10 @@ import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -75,10 +73,13 @@ public class AutoValueWithExtension extends AutoValueExtension {
             }
         }
 
-        List<AnnotationSpec> annotationSpecs = new ArrayList<>(withMethod.methodAnnotations.size() + 1);
-        annotationSpecs.add(AnnotationSpec.builder(Override.class).build());
+        List<AnnotationSpec> annotations = new ArrayList<>(withMethod.methodAnnotations.size() + 1);
         for (AnnotationMirror methodAnnotation : withMethod.methodAnnotations) {
-            annotationSpecs.add(AnnotationSpec.get(methodAnnotation));
+            annotations.add(AnnotationSpec.get(methodAnnotation));
+        }
+        AnnotationSpec override = AnnotationSpec.builder(Override.class).build();
+        if (!annotations.contains(override)) {
+            annotations.add(0, override);
         }
 
         List<Modifier> modifiers = new ArrayList<>(2);
@@ -91,7 +92,7 @@ public class AutoValueWithExtension extends AutoValueExtension {
         }
 
         return MethodSpec.methodBuilder(withMethod.methodName)
-                .addAnnotations(annotationSpecs)
+                .addAnnotations(annotations)
                 .addModifiers(modifiers)
                 .returns(getAutoValueClassClassName(context))
                 .addParameter(withMethod.property.type(), withMethod.property.humanName())
