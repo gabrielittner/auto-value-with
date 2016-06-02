@@ -41,14 +41,15 @@ public class AutoValueWithExtension extends AutoValueExtension {
         return consumedProperties;
     }
 
-    @Override public String generateClass(Context context, String className, String classToExtend,
-            boolean isFinal) {
-        TypeSpec.Builder subclass = newTypeSpecBuilder(context, className, classToExtend, isFinal)
-                .addMethods(generateWithMethods(context));
+    @Override
+    public String generateClass(
+            Context context, String className, String classToExtend, boolean isFinal) {
+        TypeSpec subclass =
+                newTypeSpecBuilder(context, className, classToExtend, isFinal)
+                        .addMethods(generateWithMethods(context))
+                        .build();
 
-        return JavaFile.builder(context.packageName(), subclass.build())
-                .build()
-                .toString();
+        return JavaFile.builder(context.packageName(), subclass).build().toString();
     }
 
     private List<MethodSpec> generateWithMethods(Context context) {
@@ -61,8 +62,8 @@ public class AutoValueWithExtension extends AutoValueExtension {
         return generatedMethods;
     }
 
-    private MethodSpec generateWithMethod(WithMethod withMethod, Context context,
-            ImmutableList<Property> properties) {
+    private MethodSpec generateWithMethod(
+            WithMethod withMethod, Context context, ImmutableList<Property> properties) {
         String[] propertyNames = new String[properties.size()];
         for (int i = 0; i < propertyNames.length; i++) {
             Property property = properties.get(i);

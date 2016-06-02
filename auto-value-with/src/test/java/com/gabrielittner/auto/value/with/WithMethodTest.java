@@ -28,7 +28,8 @@ public class WithMethodTest {
         this.types = compilationRule.getTypes();
     }
 
-    @Test public void testResolvingGenericType() {
+    @Test
+    public void testResolvingGenericType() {
         TypeElement thing = elements.getTypeElement(Thing.class.getCanonicalName());
         ImmutableSet<ExecutableElement> methods = getLocalAndInheritedMethods(thing, elements);
         for (ExecutableElement method : methods) {
@@ -37,14 +38,14 @@ public class WithMethodTest {
                 assertThat(returns.toString()).isEqualTo(Thing.class.getCanonicalName());
             }
         }
-
     }
 
     abstract class Thing extends BaseThing<Thing> {}
 
     abstract class BaseThing<P extends BaseThing<P>> extends BasementThing<P, P> {}
 
-    abstract class BasementThing<K extends V, V extends BasementThing<K, V>> extends FoundationThing<K> {}
+    abstract class BasementThing<K extends V, V extends BasementThing<K, V>>
+            extends FoundationThing<K> {}
 
     abstract class FoundationThing<T extends FoundationThing<T>> {
         abstract T name();
