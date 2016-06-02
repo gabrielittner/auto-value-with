@@ -107,16 +107,16 @@ public final class AutoValueWithExtensionTest {
                     + "import com.google.auto.value.AutoValue;\n"
                     + "public abstract class AbstractTest {\n"
                     + "public abstract String a();\n"
-                    + "abstract AbstractTest withA(String a);"
+                    + "abstract AbstractTest withA(String a);\n"
                     + "public abstract String b();\n"
-                    + "abstract AbstractTest withB(String B);"
+                    + "abstract AbstractTest withB(String B);\n"
                     + "}\n"
     );
     JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test", ""
             + "package test;\n"
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test extends AbstractTest {\n"
-            +     "@Override abstract Test withB(String b);"
+            +     "@Override abstract Test withB(String b);\n"
             + "}\n"
     );
 
@@ -151,7 +151,7 @@ public final class AutoValueWithExtensionTest {
             + "import com.google.auto.value.AutoValue;\n"
             + "public abstract class AbstractTest<T extends AbstractTest<T>> {\n"
             + "public abstract String a();\n"
-            + "abstract T withA(String a);"
+            + "abstract T withA(String a);\n"
             + "}\n"
     );
     JavaFileObject source2 = JavaFileObjects.forSourceString("test.Test", ""
@@ -189,7 +189,7 @@ public final class AutoValueWithExtensionTest {
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test<T> {\n"
             + "public abstract T t();\n"
-            + "abstract Test<T> withT(T t);"
+            + "abstract Test<T> withT(T t);\n"
             + "}\n"
     );
 
@@ -214,30 +214,13 @@ public final class AutoValueWithExtensionTest {
             .generatesSources(expectedSource);
   }
 
-  @Test public void tooManyParameters() {
-    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
-            + "package test;\n"
-            + "import com.google.auto.value.AutoValue;\n"
-            + "@AutoValue public abstract class Test {\n"
-            + "public abstract String a();\n"
-            + "abstract Test withA(String a, String b);"
-            + "}\n"
-    );
-
-    assertAbout(javaSources())
-            .that(Collections.singletonList(source))
-            .processedWith(new AutoValueProcessor())
-            .failsToCompile()
-            .withErrorContaining("Expected single argument of type java.lang.String for withA()");
-  }
-
   @Test public void wrongMethodName() {
     JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
             + "package test;\n"
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test {\n"
             + "public abstract String a();\n"
-            + "abstract Test withB(String b);"
+            + "abstract Test withB(String b);\n"
             + "}\n"
     );
 
@@ -245,7 +228,24 @@ public final class AutoValueWithExtensionTest {
             .that(Collections.singletonList(source))
             .processedWith(new AutoValueProcessor())
             .failsToCompile()
-            .withErrorContaining("test.Test doesn't have property with name b which is required for withB()");
+            .withErrorContaining("Property \"b\" not found");
+  }
+
+  @Test public void tooManyParameters() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+            + "package test;\n"
+            + "import com.google.auto.value.AutoValue;\n"
+            + "@AutoValue public abstract class Test {\n"
+            + "public abstract String a();\n"
+            + "abstract Test withA(String a, String b);\n"
+            + "}\n"
+    );
+
+    assertAbout(javaSources())
+            .that(Collections.singletonList(source))
+            .processedWith(new AutoValueProcessor())
+            .failsToCompile()
+            .withErrorContaining("Expected single argument of type java.lang.String");
   }
 
   @Test public void wrongParameterType() {
@@ -254,7 +254,7 @@ public final class AutoValueWithExtensionTest {
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test {\n"
             + "public abstract String a();\n"
-            + "abstract Test withA(int b);"
+            + "abstract Test withA(int b);\n"
             + "}\n"
     );
 
@@ -262,7 +262,7 @@ public final class AutoValueWithExtensionTest {
             .that(Collections.singletonList(source))
             .processedWith(new AutoValueProcessor())
             .failsToCompile()
-            .withErrorContaining("Expected single argument of type java.lang.String for withA()");
+            .withErrorContaining("Expected single argument of type java.lang.String");
   }
 
   @Test public void wrongReturnType() {
@@ -271,7 +271,7 @@ public final class AutoValueWithExtensionTest {
             + "import com.google.auto.value.AutoValue;\n"
             + "@AutoValue public abstract class Test {\n"
             + "public abstract String a();\n"
-            + "abstract String withA(String a);"
+            + "abstract String withA(String a);\n"
             + "}\n"
     );
 
@@ -279,7 +279,7 @@ public final class AutoValueWithExtensionTest {
             .that(Collections.singletonList(source))
             .processedWith(new AutoValueProcessor())
             .failsToCompile()
-            .withErrorContaining("withA() in test.Test returns java.lang.String, expected test.Test");
+            .withErrorContaining("Expected test.Test as return type");
   }
 
   @Test public void dontImplementNonAbstractWithMethod() {
@@ -290,8 +290,8 @@ public final class AutoValueWithExtensionTest {
             + "  public abstract String a();\n"
             + "  public abstract String b();\n"
             + "  abstract Test withA(String a);\n"
-            + "  Test withB(String b) {"
-            + "    return null;"
+            + "  Test withB(String b) {\n"
+            + "    return null;\n"
             + "  }\n"
             + "}\n"
     );
@@ -325,8 +325,8 @@ public final class AutoValueWithExtensionTest {
             + "@AutoValue public abstract class Test {\n"
             + "public abstract int getA();\n"
             + "public abstract boolean isB();\n"
-            + "abstract Test withA(int a);"
-            + "abstract Test withB(boolean b);"
+            + "abstract Test withA(int a);\n"
+            + "abstract Test withB(boolean b);\n"
             + "}\n"
     );
 
