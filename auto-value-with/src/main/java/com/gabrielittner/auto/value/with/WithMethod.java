@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.TypeName;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,8 +69,8 @@ class WithMethod {
             List<? extends VariableElement> parameters = method.getParameters();
             if (parameters.size() != 1
                     || !TypeName.get(parameters.get(0).asType()).equals(property.type())) {
-                String message = String.format(
-                        "Expected single argument of type %s", property.type());
+                String message =
+                        String.format("Expected single argument of type %s", property.type());
                 messager.printMessage(Kind.ERROR, message, method);
                 continue;
             }
@@ -90,8 +91,7 @@ class WithMethod {
         ImmutableSet<ExecutableElement> methods = getAbstractMethods(context);
         List<ExecutableElement> withMethods = new ArrayList<>(methods.size());
         for (ExecutableElement method : methods) {
-            if (method.getModifiers().contains(Modifier.ABSTRACT)
-                    && method.getSimpleName().toString().startsWith(PREFIX)
+            if (method.getSimpleName().toString().startsWith(PREFIX)
                     && method.getParameters().size() > 0) {
                 withMethods.add(method);
             }
@@ -103,7 +103,15 @@ class WithMethod {
         //TODO AutoValue 1.3: replace with context.getAbstractMethods()
         ProcessingEnvironment environment = context.processingEnvironment();
         TypeElement autoValueClass = context.autoValueClass();
-        return getLocalAndInheritedMethods(autoValueClass, environment.getElementUtils());
+        ImmutableSet<ExecutableElement> methods =
+                getLocalAndInheritedMethods(autoValueClass, environment.getElementUtils());
+        List<ExecutableElement> abstractMethods = new ArrayList<>(methods.size());
+        for (ExecutableElement method : methods) {
+            if (method.getModifiers().contains(Modifier.ABSTRACT)) {
+                abstractMethods.add(method);
+            }
+        }
+        return ImmutableSet.copyOf(abstractMethods);
     }
 
     private static String removePrefix(String name) {
@@ -111,12 +119,12 @@ class WithMethod {
                 + name.substring(PREFIX.length() + 1);
     }
 
-
     static TypeMirror getResolvedReturnType(
             Types typeUtils, TypeElement type, ExecutableElement method) {
         TypeMirror returnType = method.getReturnType();
         if (returnType.getKind() == TypeKind.TYPEVAR) {
-            List<TypeElement> hierarchy = getHierarchyUntilClassWithElement(typeUtils, type, method);
+            List<TypeElement> hierarchy =
+                    getHierarchyUntilClassWithElement(typeUtils, type, method);
             return resolveGenericType(hierarchy, returnType);
         }
         return returnType;
