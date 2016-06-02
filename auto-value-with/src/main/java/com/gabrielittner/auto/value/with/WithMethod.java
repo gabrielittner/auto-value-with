@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -21,6 +22,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
+import javax.tools.Diagnostic.Kind;
 
 import static com.google.auto.common.MoreElements.getLocalAndInheritedMethods;
 
@@ -34,48 +36,52 @@ class WithMethod {
 
     final Property property;
 
-    private WithMethod(String methodName, Set<Modifier> methodModifiers,
-            List<? extends AnnotationMirror> methodAnnotations, Property property) {
+    private WithMethod(String methodName, ExecutableElement method, Property property) {
         this.methodName = methodName;
-        this.methodModifiers = methodModifiers;
-        this.methodAnnotations = methodAnnotations;
+        this.methodModifiers = method.getModifiers();
+        this.methodAnnotations = method.getAnnotationMirrors();
         this.property = property;
     }
 
     static List<WithMethod> getWithMethods(Context context) {
-        ImmutableSet<ExecutableElement> methods = filterMethods(context);
-        ProcessingEnvironment environment = context.processingEnvironment();
-        Types typeUtils = environment.getTypeUtils();
-        TypeElement autoValueClass = context.autoValueClass();
+        Messager messager = context.processingEnvironment().getMessager();
+        Types typeUtils = context.processingEnvironment().getTypeUtils();
 
+        TypeElement autoValueClass = context.autoValueClass();
         Map<String, ExecutableElement> properties = context.properties();
+
+        ImmutableSet<ExecutableElement> methods = filterMethods(context);
         List<WithMethod> withMethods = new ArrayList<>(methods.size());
         for (ExecutableElement method : methods) {
             String methodName = method.getSimpleName().toString();
 
-            Property property;
             String propertyName = removePrefix(methodName);
-            ExecutableElement element = properties.get(propertyName);
-            if (element != null) {
-                property = new Property(propertyName, element);
-            } else {
-                throw new IllegalArgumentException(String.format("%s doesn't have property with name"
-                        + " %s which is required for %s()", autoValueClass, propertyName, methodName));
+            ExecutableElement propertyMethod = properties.get(propertyName);
+            if (propertyMethod == null) {
+                String message = String.format("Property \"%s\" not found", propertyName);
+                messager.printMessage(Kind.ERROR, message, method);
+                continue;
             }
+
+            Property property = new Property(propertyName, propertyMethod);
 
             List<? extends VariableElement> parameters = method.getParameters();
             if (parameters.size() != 1
                     || !TypeName.get(parameters.get(0).asType()).equals(property.type())) {
-                throw new IllegalArgumentException(String.format("Expected single argument of type"
-                        + " %s for %s()", property.type(), methodName));
+                String message = String.format(
+                        "Expected single argument of type %s", property.type());
+                messager.printMessage(Kind.ERROR, message, method);
+                continue;
             }
+
             TypeMirror returnType = getResolvedReturnType(typeUtils, autoValueClass, method);
             if (!typeUtils.isAssignable(autoValueClass.asType(), returnType)) {
-                throw new IllegalArgumentException(String.format("%s() in %s returns %s, expected %s",
-                        methodName, autoValueClass, returnType, autoValueClass));
+                String message = String.format("Expected %s as return type", autoValueClass);
+                messager.printMessage(Kind.ERROR, message, method);
+                continue;
             }
-            withMethods.add(new WithMethod(methodName, method.getModifiers(),
-                    method.getAnnotationMirrors(), property));
+
+            withMethods.add(new WithMethod(methodName, method, property));
         }
         return withMethods;
     }
