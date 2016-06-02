@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+Version 0.1.4 *(2016-06-02)*
+----------------------------
+
+#### Supports: AutoValue 1.2
+
+- support generic return types for with-ers
+- fix duplicate `@Override` annotation in generated code
+- improved error reporting
+- removed dependency on AutoService
+
 Version 0.1.3 *(2016-05-06)*
 ----------------------------
 
