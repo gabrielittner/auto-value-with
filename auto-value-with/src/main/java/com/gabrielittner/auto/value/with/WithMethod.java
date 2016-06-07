@@ -5,8 +5,7 @@ import com.google.auto.value.extension.AutoValueExtension.Context;
 import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.TypeName;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -123,42 +122,66 @@ class WithMethod {
             Types typeUtils, TypeElement type, ExecutableElement method) {
         TypeMirror returnType = method.getReturnType();
         if (returnType.getKind() == TypeKind.TYPEVAR) {
-            List<TypeElement> hierarchy =
+            List<HierarchyElement> hierarchy =
                     getHierarchyUntilClassWithElement(typeUtils, type, method);
             return resolveGenericType(hierarchy, returnType);
         }
         return returnType;
     }
 
-    private static List<TypeElement> getHierarchyUntilClassWithElement(
+    private static List<HierarchyElement> getHierarchyUntilClassWithElement(
             Types typeUtils, TypeElement start, Element target) {
-        List<TypeElement> classHierarchy = new ArrayList<>();
-        classHierarchy.add(start);
-        TypeElement element = start;
-        while (!element.getEnclosedElements().contains(target)) {
-            element = (TypeElement) typeUtils.asElement(element.getSuperclass());
-            classHierarchy.add(element);
+
+        for (TypeMirror superType : typeUtils.directSupertypes(start.asType())) {
+            TypeElement superTypeElement = (TypeElement) typeUtils.asElement(superType);
+            if (superTypeElement.getEnclosedElements().contains(target)) {
+                HierarchyElement base = new HierarchyElement(superTypeElement, null);
+                HierarchyElement current = new HierarchyElement(start, superType);
+                return new ArrayList<>(Arrays.asList(base, current));
+            }
         }
-        Collections.reverse(classHierarchy);
-        return classHierarchy;
+
+        for (TypeMirror superType : typeUtils.directSupertypes(start.asType())) {
+            TypeElement superTypeElement = (TypeElement) typeUtils.asElement(superType);
+            List<HierarchyElement> result =
+                    getHierarchyUntilClassWithElement(typeUtils, superTypeElement, target);
+            if (result != null) {
+                result.add(new HierarchyElement(start, superType));
+                return result;
+            }
+        }
+        return null;
     }
 
-    private static TypeMirror resolveGenericType(List<TypeElement> hierarchy, TypeMirror type) {
-        int position = indexOfParameter(hierarchy.get(0).getTypeParameters(), type.toString());
-        for (int i = 1; i < hierarchy.size(); i++) {
-            TypeElement current = hierarchy.get(i);
-            type = ((DeclaredType) current.getSuperclass()).getTypeArguments().get(position);
+    private static TypeMirror resolveGenericType(
+            List<HierarchyElement> hierarchy, TypeMirror type) {
 
+        int position = indexOfParameter(hierarchy.get(0).element, type.toString());
+        for (int i = 1; i < hierarchy.size(); i++) {
+            HierarchyElement hierarchyElement = hierarchy.get(i);
+
+            type = ((DeclaredType) hierarchyElement.superType).getTypeArguments().get(position);
             if (type.getKind() != TypeKind.TYPEVAR) {
                 return type;
             }
 
-            position = indexOfParameter(current.getTypeParameters(), type.toString());
+            position = indexOfParameter(hierarchyElement.element, type.toString());
         }
         throw new IllegalArgumentException("Couldn't resolve type " + type);
     }
 
-    private static int indexOfParameter(List<? extends TypeParameterElement> params, String param) {
+    private static class HierarchyElement {
+        private final TypeElement element;
+        private final TypeMirror superType;
+
+        private HierarchyElement(TypeElement element, TypeMirror superType) {
+            this.element = element;
+            this.superType = superType;
+        }
+    }
+
+    private static int indexOfParameter(TypeElement element, String param) {
+        List<? extends TypeParameterElement> params = element.getTypeParameters();
         for (int i = 0; i < params.size(); i++) {
             if (params.get(i).getSimpleName().toString().equals(param)) {
                 return i;
