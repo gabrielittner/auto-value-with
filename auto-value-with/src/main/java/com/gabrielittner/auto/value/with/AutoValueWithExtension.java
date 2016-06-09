@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,13 +28,13 @@ public class AutoValueWithExtension extends AutoValueExtension {
 
     @Override
     public boolean applicable(Context context) {
-        return WithMethod.filterMethods(context).size() > 0;
+        return WithMethod.filteredAbstractMethods(context).size() > 0;
     }
 
     @Override
     public Set<String> consumeProperties(Context context) {
         //TODO AutoValue 1.3: use consumeMethods(Context) instead
-        ImmutableSet<ExecutableElement> methods = WithMethod.filterMethods(context);
+        ImmutableSet<ExecutableElement> methods = WithMethod.filteredAbstractMethods(context);
         Set<String> consumedProperties = new HashSet<>(methods.size());
         for (ExecutableElement method : methods) {
             consumedProperties.add(method.getSimpleName().toString());
@@ -67,7 +68,7 @@ public class AutoValueWithExtension extends AutoValueExtension {
         String[] propertyNames = new String[properties.size()];
         for (int i = 0; i < propertyNames.length; i++) {
             Property property = properties.get(i);
-            if (property.humanName().equals(withMethod.property.humanName())) {
+            if (withMethod.propertyNames.contains(property.humanName())) {
                 propertyNames[i] = property.humanName();
             } else {
                 propertyNames[i] = property.methodName() + "()";
@@ -92,11 +93,16 @@ public class AutoValueWithExtension extends AutoValueExtension {
             }
         }
 
+        List<ParameterSpec> parameters = new ArrayList<>(withMethod.properties.size());
+        for (Property property : withMethod.properties) {
+            parameters.add(ParameterSpec.builder(property.type(), property.humanName()).build());
+        }
+
         return MethodSpec.methodBuilder(withMethod.methodName)
                 .addAnnotations(annotations)
                 .addModifiers(modifiers)
                 .returns(getAutoValueClassClassName(context))
-                .addParameter(withMethod.property.type(), withMethod.property.humanName())
+                .addParameters(parameters)
                 .addCode("return ")
                 .addCode(newFinalClassConstructorCall(context, propertyNames))
                 .build();

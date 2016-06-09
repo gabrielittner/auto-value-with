@@ -42,6 +42,9 @@ public final class AutoValueWithExtensionTest {
                 // property name starting with "with"
                 + "  public abstract String withI();\n"
                 + "  abstract Test withWithI(String withI);\n"
+                // multiple properties
+                + "  abstract Test withAC(String a, int c);\n"
+                + "  abstract Test withBACD(String b, String a, int c, int d);\n"
                 + "}\n");
 
         JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
@@ -73,6 +76,12 @@ public final class AutoValueWithExtensionTest {
                 + "  }\n"
                 + "  @Override final Test withWithI(String withI) {\n"
                 + "    return new AutoValue_Test(a(), b(), c(), d(), e(), f(), g(), h(), withI);\n"
+                + "  }\n"
+                + "  @Override final Test withAC(String a, int c) {\n"
+                + "    return new AutoValue_Test(a, b(), c, d(), e(), f(), g(), h(), withI());\n"
+                + "  }\n"
+                + "  @Override final Test withBACD(String b, String a, int c, int d) {\n"
+                + "    return new AutoValue_Test(a, b, c, d, e(), f(), g(), h(), withI());\n"
                 + "  }\n"
                 + "}\n");
 
@@ -163,13 +172,13 @@ public final class AutoValueWithExtensionTest {
     }
 
     @Test
-    public void wrongMethodName() {
+    public void wrongParameterName() {
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
                 + "package test;\n"
                 + "import com.google.auto.value.AutoValue;\n"
                 + "@AutoValue public abstract class Test {\n"
                 + "  public abstract String a();\n"
-                + "  abstract Test withB(String b);\n"
+                + "  abstract Test withA(String b);\n"
                 + "}\n");
 
         assertAbout(javaSources())
@@ -180,37 +189,20 @@ public final class AutoValueWithExtensionTest {
     }
 
     @Test
-    public void tooManyParameters() {
-        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
-                + "package test;\n"
-                + "import com.google.auto.value.AutoValue;\n"
-                + "@AutoValue public abstract class Test {\n"
-                + "  public abstract String a();\n"
-                + "  abstract Test withA(String a, String b);\n"
-                + "}\n");
-
-        assertAbout(javaSources())
-                .that(Collections.singletonList(source))
-                .processedWith(new AutoValueProcessor())
-                .failsToCompile()
-                .withErrorContaining("Expected single argument of type java.lang.String");
-    }
-
-    @Test
     public void wrongParameterType() {
         JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
                 + "package test;\n"
                 + "import com.google.auto.value.AutoValue;\n"
                 + "@AutoValue public abstract class Test {\n"
                 + "  public abstract String a();\n"
-                + "  abstract Test withA(int b);\n"
+                + "  abstract Test withA(int a);\n"
                 + "}\n");
 
         assertAbout(javaSources())
                 .that(Collections.singletonList(source))
                 .processedWith(new AutoValueProcessor())
                 .failsToCompile()
-                .withErrorContaining("Expected single argument of type java.lang.String");
+                .withErrorContaining("Expected type java.lang.String for a");
     }
 
     @Test
