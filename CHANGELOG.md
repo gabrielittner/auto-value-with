@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 0.1.5 *(2016-06-09)*
+----------------------------
+
+#### Supports: AutoValue 1.2
+
+- support generic return types for with-ers in interfaces
+
 Version 0.1.4 *(2016-06-02)*
 ----------------------------
 
