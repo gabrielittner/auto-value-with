@@ -4,13 +4,11 @@ import com.gabrielittner.auto.value.util.Property;
 import com.google.auto.service.AutoService;
 import com.google.auto.value.extension.AutoValueExtension;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -31,14 +29,8 @@ public class AutoValueWithExtension extends AutoValueExtension {
     }
 
     @Override
-    public Set<String> consumeProperties(Context context) {
-        //TODO AutoValue 1.3: use consumeMethods(Context) instead
-        ImmutableSet<ExecutableElement> methods = WithMethod.filterMethods(context);
-        Set<String> consumedProperties = new HashSet<>(methods.size());
-        for (ExecutableElement method : methods) {
-            consumedProperties.add(method.getSimpleName().toString());
-        }
-        return consumedProperties;
+    public Set<ExecutableElement> consumeMethods(Context context) {
+        return WithMethod.filterMethods(context);
     }
 
     @Override
