@@ -1,13 +1,20 @@
 Change Log
 ==========
 
+Version 1.0.0 *(2016-09-09)*
+----------------------------
+
+#### Supports: AutoValue 1.3
+
+- support for AutoValue 1.3
+- support for with-ers with multiple properties, e.g. `withNameAndEmail(String name, String email)`
+
 Version 1.0.0-rc1 *(2016-06-13)*
 ----------------------------
 
 #### Supports: AutoValue 1.3-rc1
 
 - support for AutoValue 1.3-rc1
-- support for with-ers with multiple properties, e.g. `withNameAndEmail(String name, String email)`
 
 Version 0.1.5 *(2016-06-09)*
 ----------------------------

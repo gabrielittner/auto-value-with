@@ -43,8 +43,7 @@ def getRepositoryPassword() {
 }
 
 afterEvaluate { project ->
-    uploadArchives.dependsOn(uploadShadow)
-    uploadShadow {
+    uploadArchives {
         repositories {
             mavenDeployer {
                 beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
@@ -92,8 +91,8 @@ afterEvaluate { project ->
     }
 
     signing {
-        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadShadow") }
-        sign configurations.shadow
+        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.archives
     }
 
     if (project.getPlugins().hasPlugin('com.android.application') ||
@@ -207,8 +206,13 @@ afterEvaluate { project ->
     }
 
     artifacts {
-        runtime shadowJar
-        shadow sourcesJar
-        shadow javadocJar
+        if (project.getPlugins().hasPlugin('com.android.application') ||
+                project.getPlugins().hasPlugin('com.android.library')) {
+            archives androidSourcesJar
+            archives androidJavadocsJar
+        } else {
+            archives sourcesJar
+            archives javadocJar
+        }
     }
 }
