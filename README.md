@@ -21,7 +21,7 @@ Include auto-value-with in your project and "with-er" methods to your auto-value
 The extension will generate an implementation of `withEmail(String)` that returns a new instance of `User` with the given email.
   
 
-By convention "with-er" methods have to use with as prefix and use the exact property name for both method name and parameter name.
+By convention "with-er" methods have to use `with` as prefix and use the exact property name for both method name and parameter name.
 
 
 
