@@ -34,6 +34,10 @@ apt 'com.gabrielittner.auto.value:auto-value-with:1.0.0'
 ```
 (Using the [android-apt][apt] plugin)
 
+Note: If you are using the new Jack compiler with version 2.2.0 or newer you do not need the
+'android-apt' plugin and can instead replace `apt` with `annotationProcessor` when declaring the
+compiler dependency.
+
 or Maven:
 ```xml
 <dependency>
