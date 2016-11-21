@@ -15,6 +15,9 @@ Include auto-value-with in your project and "with-er" methods to your auto-value
   abstract String email();
 
   abstract User withEmail(String email);
+  
+  // you can also use multiple 
+  abstract User withNameAndEmail(String name, String email);
 }
 ```
 
@@ -27,12 +30,18 @@ By convention "with-er" methods have to use `with` as prefix and use the exact p
 
 ## Download
 
-Add a Gradle dependency:
+Add a Gradle dependency (Android):
+
+```groovy
+annotationProcessor 'com.gabrielittner.auto.value:auto-value-with:1.0.0'
+```
+
+or Gradle (Java):
 
 ```groovy
 apt 'com.gabrielittner.auto.value:auto-value-with:1.0.0'
 ```
-(Using the [android-apt][apt] plugin)
+(Using the [gradle-apt-plugin][apt])
 
 or Maven:
 ```xml
@@ -69,5 +78,5 @@ limitations under the License.
 
  [auto]: https://github.com/google/auto
  [snap]: https://oss.sonatype.org/content/repositories/snapshots/
- [apt]: https://bitbucket.org/hvisser/android-apt
+ [apt]: https://github.com/tbroyer/gradle-apt-plugin
 
