@@ -94,6 +94,36 @@ public final class AutoValueWithExtensionTest {
     }
 
     @Test
+    public void generic() {
+        JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+                + "package test;\n"
+                + "import com.google.auto.value.AutoValue;\n"
+                + "@AutoValue public abstract class Test<T> {\n"
+                + "  public abstract T a();\n"
+                + "  abstract Test<T> withA(T a);\n"
+                + "}\n");
+
+        JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/AutoValue_Test", ""
+                + "package test;\n"
+                + "import java.lang.Override;\n"
+                + "final class AutoValue_Test<T> extends $AutoValue_Test<T> {\n"
+                + "  AutoValue_Test(T a) {\n"
+                + "    super(a);\n"
+                + "  }\n"
+                + "  @Override final Test<T> withA(T a) {\n"
+                + "    return new AutoValue_Test<>(a);\n"
+                + "  }\n"
+                + "}\n");
+
+        assertAbout(javaSources())
+                .that(Collections.singletonList(source))
+                .processedWith(new AutoValueProcessor())
+                .compilesWithoutError()
+                .and()
+                .generatesSources(expectedSource);
+    }
+
+    @Test
     public void returnsSuperType() {
         JavaFileObject source1 = JavaFileObjects.forSourceString("test.AbstractTest", ""
                 + "package test;\n"

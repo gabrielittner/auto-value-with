@@ -16,7 +16,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 
-import static com.gabrielittner.auto.value.util.AutoValueUtil.getAutoValueClassClassName;
+import static com.gabrielittner.auto.value.util.AutoValueUtil.getAutoValueClassTypeName;
 import static com.gabrielittner.auto.value.util.AutoValueUtil.newFinalClassConstructorCall;
 import static com.gabrielittner.auto.value.util.AutoValueUtil.newTypeSpecBuilder;
 import static javax.lang.model.element.Modifier.FINAL;
@@ -93,7 +93,7 @@ public class AutoValueWithExtension extends AutoValueExtension {
         return MethodSpec.methodBuilder(withMethod.methodName)
                 .addAnnotations(annotations)
                 .addModifiers(modifiers)
-                .returns(getAutoValueClassClassName(context))
+                .returns(getAutoValueClassTypeName(context))
                 .addParameters(parameters)
                 .addCode("return ")
                 .addCode(newFinalClassConstructorCall(context, propertyNames))
