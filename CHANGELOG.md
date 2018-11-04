@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+Version 1.1.0-rc1 *(2018-11-04)*
+----------------------------
+
+#### Supports: AutoValue 1.6.3rc1
+
+- support incremental annotation processing
+- improvements to generated code when AutoValue class is generic
+
 Version 1.0.0 *(2016-09-09)*
 ----------------------------
 

@@ -15,14 +15,14 @@ Include auto-value-with in your project and "with-er" methods to your auto-value
   abstract String email();
 
   abstract User withEmail(String email);
-  
-  // you can also use multiple 
+
+  // you can also use multiple
   abstract User withNameAndEmail(String name, String email);
 }
 ```
 
 The extension will generate an implementation of `withEmail(String)` that returns a new instance of `User` with the given email.
-  
+
 
 By convention "with-er" methods have to use `with` as prefix and use the exact property name for both method name and parameter name.
 
@@ -33,13 +33,13 @@ By convention "with-er" methods have to use `with` as prefix and use the exact p
 Add a Gradle dependency (Android):
 
 ```groovy
-annotationProcessor 'com.gabrielittner.auto.value:auto-value-with:1.0.0'
+annotationProcessor 'com.gabrielittner.auto.value:auto-value-with:1.1.0-rc1'
 ```
 
 or Gradle (Java):
 
 ```groovy
-apt 'com.gabrielittner.auto.value:auto-value-with:1.0.0'
+apt 'com.gabrielittner.auto.value:auto-value-with:1.1.0-rc1'
 ```
 (Using the [gradle-apt-plugin][apt])
 
