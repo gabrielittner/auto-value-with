@@ -12,6 +12,7 @@ import com.squareup.javapoet.TypeSpec;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -27,6 +28,11 @@ public class AutoValueWithExtension extends AutoValueExtension {
     @Override
     public boolean applicable(Context context) {
         return WithMethod.filteredAbstractMethods(context).size() > 0;
+    }
+
+    @Override
+    public IncrementalExtensionType incrementalType(ProcessingEnvironment processingEnvironment) {
+        return IncrementalExtensionType.ISOLATING;
     }
 
     @Override
