@@ -18,6 +18,7 @@ allprojects {
 
 ext {
     javaVersion = JavaVersion.VERSION_1_7
+    autoServiceVersion = "1.0-rc5"
 }
 
 ext.deps = [
@@ -27,8 +28,8 @@ ext.deps = [
         guava: 'com.google.guava:guava:28.0-jre',
         auto_ext_util: 'com.gabrielittner.auto.value:auto-value-extension-util:0.4.0',
 
-        auto_service_annotations: 'com.google.auto.service:auto-service-annotations:1.0-rc5',
-        auto_service: 'com.google.auto.service:auto-service:1.0-rc5',
+        auto_service_annotations: "com.google.auto.service:auto-service-annotations:$autoServiceVersion",
+        auto_service: "com.google.auto.service:auto-service:$autoServiceVersion",
 
         junit: 'junit:junit:4.12',
         truth: 'com.google.truth:truth:1.0',
