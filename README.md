@@ -33,13 +33,13 @@ By convention "with-er" methods have to use `with` as prefix and use the exact p
 Add a Gradle dependency (Android):
 
 ```groovy
-annotationProcessor 'com.gabrielittner.auto.value:auto-value-with:1.1.0-rc1'
+annotationProcessor 'com.gabrielittner.auto.value:auto-value-with:1.1.0'
 ```
 
 or Gradle (Java):
 
 ```groovy
-apt 'com.gabrielittner.auto.value:auto-value-with:1.1.0-rc1'
+apt 'com.gabrielittner.auto.value:auto-value-with:1.1.0'
 ```
 (Using the [gradle-apt-plugin][apt])
 
@@ -79,4 +79,3 @@ limitations under the License.
  [auto]: https://github.com/google/auto
  [snap]: https://oss.sonatype.org/content/repositories/snapshots/
  [apt]: https://github.com/tbroyer/gradle-apt-plugin
-
